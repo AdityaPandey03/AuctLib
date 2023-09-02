@@ -1,14 +1,20 @@
 # library_app/views.py
 
 from rest_framework import generics
-from rest_framework.permissions import AllowAny
+from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework_simplejwt.tokens import Token, RefreshToken
-from .models import CustomUser
+from .models import CustomUser, Book, Order
+from rest_framework import viewsets
+
+from .serializers import UserRegistrationSerializer, UserLoginSerializer, BookSerializer, OrderSerializer
 
 
-from .serializers import UserRegistrationSerializer, UserLoginSerializer
+class BookViewSet(viewsets.ReadOnlyModelViewSet):
+    queryset = Book.objects.all()
+    serializer_class = BookSerializer
+
 
 class UserRegistrationView(generics.CreateAPIView):
     queryset = CustomUser.objects.all()
@@ -43,3 +49,18 @@ class UserLoginView(generics.CreateAPIView):
             }
             return Response(data, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_401_UNAUTHORIZED)
+
+
+class OrderCreateView(generics.CreateAPIView):
+    queryset = Order.objects.all()
+    serializer_class = OrderSerializer
+    permission_classes = [IsAuthenticated]
+
+    def perform_create(self, serializer):
+        serializer.save(user=self.request.user)
+
+
+class OrderListView(generics.ListAPIView):
+    queryset = Order.objects.all()
+    serializer_class = OrderSerializer
+    permission_classes = [IsAuthenticated]
